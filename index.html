@@ -99,18 +99,6 @@ canvas{display:block;cursor:crosshair}
 #mbtns button{padding:6px 14px;border-radius:5px;font-size:13px;cursor:pointer;border:none;font-family:inherit}
 #mcancel{background:#F1F5F9;color:#374151}
 #mok{background:#7C3AED;color:#fff}
-#cfmOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:510;align-items:center;justify-content:center}
-#cfmOverlay.open{display:flex}
-#cfmDialog{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:20px 22px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
-#cfmHead{font-size:13px;color:#64748B;margin-bottom:4px}
-#cfmTitle{font-size:17px;font-weight:700;margin-bottom:10px}
-#cfmInfo{background:#F8FAFC;border-radius:6px;padding:10px 12px;margin-bottom:14px;line-height:1.8}
-.cfmrow{font-size:12px}
-#cfmBtns{display:flex;gap:8px;justify-content:flex-end}
-#cfmBtns button{padding:7px 16px;border-radius:6px;font-size:13px;cursor:pointer;border:none;font-family:inherit}
-#cfmOK{background:#10B981;color:#fff}
-#cfmNo{background:#EF4444;color:#fff}
-#cfmCancel{background:#F1F5F9;color:#374151}
 #spinner{display:none;position:fixed;inset:0;background:rgba(248,250,252,.92);z-index:900;align-items:center;justify-content:center;flex-direction:column;gap:12px}
 #spinner.on{display:flex}
 .spin{width:32px;height:32px;border:3px solid #E2E8F0;border-top-color:#7C3AED;border-radius:50%;animation:sp .8s linear infinite}
@@ -176,7 +164,6 @@ canvas{display:block;cursor:crosshair}
       <div class="strow"><span>&#21806;&#31080;</span><span class="sv" id="s1">-</span></div>
       <div class="strow"><span>Final &#22806;&#37096;&#31080;</span><span class="sv" id="s2" style="color:#8B5CF6">-</span></div>
       <div class="strow"><span>Final &#36938;&#25138;&#20839;&#30456;&#38364;</span><span class="sv" id="s3" style="color:#10B981">-</span></div>
-      <div class="strow"><span>&#24453;&#30906;&#35469; TBC</span><span class="sv" id="s6" style="color:#EAB308">-</span></div>
       <div class="strow"><span>&#20839;&#37096;&#31080;</span><span class="sv" id="s4">-</span></div>
       <div class="strow" style="border-top:1px solid #E2E8F0;margin-top:6px;padding-top:6px">
         <span>&#32317;&#35336;</span><span class="sv" id="s5">-</span>
@@ -225,18 +212,6 @@ canvas{display:block;cursor:crosshair}
     <h3 id="mdlgTitle">&#26032;&#22686;&#23376;&#38917;&#30446;</h3>
     <input id="minput" placeholder="&#20363;&#65306;ACS&#12289;&#23186;&#39636;&#12289;&#36106;&#21161;&#21830;" maxlength="30">
     <div id="mbtns"><button id="mcancel">&#21462;&#28040;</button><button id="mok">&#26032;&#22686;</button></div>
-  </div>
-</div>
-<div id="cfmOverlay">
-  <div id="cfmDialog">
-    <div id="cfmHead">&#23529;&#26680;&#24453;&#30906;&#35469;&#24231;&#20301;</div>
-    <div id="cfmTitle"></div>
-    <div id="cfmInfo"></div>
-    <div id="cfmBtns">
-      <button id="cfmCancel">&#21462;&#28040;</button>
-      <button id="cfmNo">&#10007; &#36864;&#22238;</button>
-      <button id="cfmOK">&#10003; &#30906;&#35469; Final</button>
-    </div>
   </div>
 </div>
 <script>
@@ -557,18 +532,17 @@ function selSec(sec){
 }
 function updSecStat(sec){
   var el=document.getElementById('sstat-'+sec);if(!el)return;
-  var d=SECTIONS[sec],wk=d.work.length,pr=0,gm=0,tbc=0;
+  var d=SECTIONS[sec],wk=d.work.length,pr=0,gm=0;
   for(var k in asgn){
     if(k.indexOf(sec+'-')!==0)continue;
     var a=asgn[k];
-    if(a.cat==='pr'){if(a.status==='tbc')tbc++;else pr++;}
-    else if(a.cat==='game'){if(a.status==='tbc')tbc++;else gm++;}
+    if(a.cat==='pr')pr++;
+    else if(a.cat==='game')gm++;
   }
-  var sale=d.seats.length-pr-gm-tbc,tot=d.seats.length+wk;
+  var sale=d.seats.length-pr-gm,tot=d.seats.length+wk;
   el.innerHTML='<div class="sstatrow"><span>\u552e\u7968</span><span class="sstatv">'+sale+'</span></div>'+
     '<div class="sstatrow"><span>\u5916\u90e8\u7968</span><span class="sstatv" style="color:#8B5CF6">'+pr+'</span></div>'+
     '<div class="sstatrow"><span>\u904a\u6232\u5167\u76f8\u95dc</span><span class="sstatv" style="color:#10B981">'+gm+'</span></div>'+
-    (tbc?'<div class="sstatrow"><span>TBC</span><span class="sstatv" style="color:#EAB308">'+tbc+'</span></div>':'')+
     '<div class="sstatrow"><span>\u5167\u90e8\u7968</span><span class="sstatv">'+wk+'</span></div>'+
     '<div class="sstatrow sstattot"><span>\u7e3d\u8a08</span><span class="sstatv">'+tot+'</span></div>';
 }
@@ -588,12 +562,6 @@ function renderSec(sec){
   for(var i=0;i<zones.length;i++){
     var pill=document.createElement('span');pill.className='zpill';pill.id='zpill-'+i;
     pill.style.background=ZONE_CFG[zones[i]]?ZONE_CFG[zones[i]].color:'#555';hdr.appendChild(pill);
-  }
-  if(curUser.isAdmin){
-    var tbcBtn=document.createElement('button');
-    tbcBtn.textContent='TBC審核';tbcBtn.style.cssText='background:#FEF3C7;color:#92400E;border:1px solid #EAB308;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;margin-left:auto;font-family:inherit';
-    (function(s){tbcBtn.addEventListener('click',function(){openCfmDialog(s);});})(sec);
-    hdr.appendChild(tbcBtn);
   }
   if(d.work.length){var wp=document.createElement('span');wp.className='zpill';wp.style.background='#374151';wp.textContent='\u5167\u90e8\u7968 '+d.work.length;hdr.appendChild(wp);}
   cw.appendChild(hdr);updZonePills(sec);
@@ -618,7 +586,6 @@ function renderSec(sec){
   lh+='<span class="litem"><span class="ldot" style="background:#374151"></span>\u5167\u90e8\u7968</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#8B5CF6"></span>\u5916\u90e8\u7968</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#10B981"></span>\u904a\u6232\u5167\u76f8\u95dc</span>';
-  lh+='<span class="litem"><span class="ldot" style="background:#EAB308"></span>TBC</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#CBD5E1"></span>\u7a7a\u4f4d\u5340</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#60A5FA"></span>\u7121\u969c\u7919\u5e2d</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#93C5FD"></span>\u966a\u4f34\u5e2d</span>';
@@ -642,7 +609,6 @@ function updZonePills(sec){
 /* ── draw ── */
 function asgnColor(key){
   var a=asgn[key];if(!a)return null;
-  if(a.status==='tbc')return '#EAB308';
   return a.color;
 }
 function drawCvs(sec,minR,maxR,minS,maxS){
@@ -692,7 +658,7 @@ function mUp(e){
       if(pos.x>=x1-PITCH&&pos.x<=x2&&pos.y>=y1-PITCH&&pos.y<=y2){
         var key2=curSec+'-'+pos.r+'-'+pos.s;
         if(isZone){delete asgn[ak];chs.push({key:key2,action:'delete'});}
-        else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:curUser.isAdmin?'final':'tbc'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});}
+        else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});}
         changed++;
       }
     }
@@ -704,7 +670,7 @@ function mUp(e){
       var ak=curSec+'-'+hit.p.r+'-'+hit.p.s,key2=curSec+'-'+hit.p.r+'-'+hit.p.s;
       if(isZone){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=1;}
       else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&asgn[ak].subId===actCat.subId){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=-1;}
-      else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:curUser.isAdmin?'final':'tbc'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});changed=1;}
+      else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});changed=1;}
       if(changed!==0){addLog((isZone||changed<0)?'\u6e05\u9664 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f':'\u6a19\u8a18 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f'+' > '+actCat.label);queueSave(chs);}
       else undoStack.pop();
     }else undoStack.pop();
@@ -721,7 +687,7 @@ function mMove(e){
     if(zc)h+='<br><span style="color:'+zc.color+'">'+zc.label+'</span>';
     if(zc&&zc.noSelect)h+='<br><span style="color:#94A3B8">\u4fdd\u7559\u5e2d\uff08\u4e0d\u958b\u653e\u9078\u64c7\uff09</span>';
     else if(wk.has(hit.k))h+='<br><span style="color:#6B7280">\u5167\u90e8\u7968</span>';
-    else if(a)h+='<br><span style="color:'+(a.status==="tbc"?"#EAB308":a.color)+'">'+a.label+(a.status==="tbc"?' (TBC)':'')+'</span>';
+    else if(a)h+='<br><span style="color:'+a.color+'">'+a.label+'</span>';
     else h+='<br><span style="color:#94A3B8">\u672a\u6307\u5b9a \u2014 \u552e\u7968</span>';
     tip.innerHTML=h;tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';
   }else tip.style.display='none';
@@ -770,55 +736,22 @@ function rebuildMenu(par){
   menu.appendChild(add);
 }
 
-/* ── TBC confirm dialog ── */
-function openCfmDialog(sec){
-  if(!curUser.isAdmin)return;
-  var tbcKeys=[],tbcInfo='';
-  for(var k in asgn){if(k.indexOf(sec+'-')===0&&asgn[k].status==='tbc'){tbcKeys.push(k.replace(sec+'-',''));tbcInfo+='<div class="cfmrow">'+k.split('-').slice(1).join('排 ')+''+asgn[k].label+'</div>';}}
-  if(!tbcKeys.length){addLog('\u6b64\u5340\u6bb5\u7121\u5f85\u5be9\u6838 TBC \u5ea7\u4f4d',true);return;}
-  document.getElementById('cfmTitle').textContent=secLbl(sec)+' — '+tbcKeys.length+' TBC';
-  document.getElementById('cfmInfo').innerHTML=tbcInfo;
-  document.getElementById('cfmOverlay').classList.add('open');
-  var okBtn=document.getElementById('cfmOK'),noBtn=document.getElementById('cfmNo');
-  okBtn.onclick=function(){
-    google.script.run
-      .withSuccessHandler(function(){
-        tbcKeys.forEach(function(k){if(asgn[sec+'-'+k])asgn[sec+'-'+k].status='final';});
-        if(curSec===sec){var b=getBounds(sec);drawCvs(sec,b[0],b[1],b[2],b[3]);updSecStat(sec);}
-        updStats();addLog('\u78ba\u8a8d Final '+secLbl(sec)+' '+tbcKeys.length+' \u5e2d');
-        document.getElementById('cfmOverlay').classList.remove('open');
-      })
-      .confirmAssignments(curEvent,tbcKeys.map(function(k){return sec+'-'+k;}), 'confirm');
-  };
-  noBtn.onclick=function(){
-    google.script.run
-      .withSuccessHandler(function(){
-        tbcKeys.forEach(function(k){delete asgn[sec+'-'+k];});
-        if(curSec===sec){var b=getBounds(sec);drawCvs(sec,b[0],b[1],b[2],b[3]);updSecStat(sec);}
-        updStats();addLog('\u9000\u56de TBC '+secLbl(sec)+' '+tbcKeys.length+' \u5e2d');
-        document.getElementById('cfmOverlay').classList.remove('open');
-      })
-      .confirmAssignments(curEvent,tbcKeys.map(function(k){return sec+'-'+k;}), 'reject');
-  };
-  document.getElementById('cfmCancel').onclick=function(){document.getElementById('cfmOverlay').classList.remove('open');};
-}
-document.getElementById('cfmOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 
 /* ── stats ── */
 function updStats(){
-  var tot=0,pr=0,gm=0,wk=0,tbc=0;
+  var tot=0,pr=0,gm=0,wk=0;
   for(var s in SECTIONS){tot+=SECTIONS[s].seats.length+SECTIONS[s].work.length;wk+=SECTIONS[s].work.length;}
   for(var k in asgn){
     var a=asgn[k];
-    if(a.status==='tbc'){tbc++;}
-    else if(a.cat==='pr')pr++;
+
+    if(a.cat==='pr')pr++;
     else if(a.cat==='game')gm++;
     else if(a.cat==='work')wk++;
   }
-  document.getElementById('s1').textContent=(tot-wk-pr-gm-tbc).toLocaleString();
+  document.getElementById('s1').textContent=(tot-wk-pr-gm).toLocaleString();
   document.getElementById('s2').textContent=pr.toLocaleString();
   document.getElementById('s3').textContent=gm.toLocaleString();
-  document.getElementById('s6').textContent=tbc.toLocaleString();
+
   document.getElementById('s4').textContent=wk.toLocaleString();
   document.getElementById('s5').textContent=tot.toLocaleString();
 }
