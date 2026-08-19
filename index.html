@@ -524,7 +524,7 @@ function buildSB_Concert(){
       btn.addEventListener('click',(function(ss){return function(){selSec(ss);}})(sec));
       sl.appendChild(btn);
       var zbar=document.createElement('div');zbar.className='szbr';zbar.id='szb-'+sec;
-      var z0=SECTIONS[sec].seats.length>0?SECTIONS[sec].seats[0].z:null;
+      var sp0=CONCERT_SPECS[sec],z0=sp0?sp0.zone:(SECTIONS[sec].seats.length>0?SECTIONS[sec].seats[0].z:null);
       if(z0&&ZONE_COLORS[z0]){var zs=document.createElement('div');zs.className='szb';zs.style.flex='1';zs.style.background=ZONE_COLORS[z0];zbar.appendChild(zs);}
       sl.appendChild(zbar);
       var st=document.createElement('div');st.className='sstat';st.id='sstat-'+sec;sl.appendChild(st);
