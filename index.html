@@ -818,15 +818,16 @@ function updStats(){
 
 /* ── export ── */
 function buildRows(){
-  var rows=['\u5340\u6bb5,\u50f9\u683c\u5340,\u6392\u865f,\u5ea7\u4f4d\u865f,\u985e\u578b,\u72c0\u614b,\u7968\u540d'];
+  var rows=['\u5340\u6bb5,\u50f9\u683c\u5340,\u6392\u865f,\u5ea7\u4f4d\u865f,\u985e\u578b,\u7968\u540d,\u72c0\u614b,\u5099\u8a3b'];
   for(var s in SECTIONS){
     var d=SECTIONS[s],wk=wkSets[s]||new Set(),lbl=secLbl(s);
-    for(var i=0;i<d.work.length;i++){var w=d.work[i];rows.push(lbl+',\u5167\u90e8\u7968,'+w.r+','+w.s+',\u5167\u90e8\u7968,,');}
+    for(var i=0;i<d.work.length;i++){var w=d.work[i];rows.push(lbl+',\u5167\u90e8\u7968,'+w.r+','+w.s+',\u5167\u90e8\u7968,,,');}
     for(var i=0;i<d.seats.length;i++){
       var seat=d.seats[i],ak=s+'-'+seat.r+'-'+seat.s,a=asgn[ak];
       var zone=ZONE_CFG[seat.z]?ZONE_CFG[seat.z].label:seat.z;
       var st=a?(a.status||'final'):'';
-      rows.push(lbl+','+zone+','+seat.r+','+seat.s+','+(a?a.label:'\u552e\u7968')+','+st+','+(a&&a.subId?a.label.substring(a.label.indexOf('-')+1):''));
+      var subName=a&&a.subId?a.label.substring(a.label.indexOf('-')+1):'';
+      rows.push(lbl+','+zone+','+seat.r+','+seat.s+','+(a?a.label:'\u552e\u7968')+','+subName+','+st+',');
     }
   }
   return rows;
