@@ -58,6 +58,13 @@ body{font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#F8FA
 #stpan{border-top:1px solid #E2E8F0;padding:12px 14px;font-size:11px;flex-shrink:0}
 #stpan h4{color:#94A3B8;margin-bottom:8px;font-size:10px;text-transform:uppercase}
 .strow{display:flex;justify-content:space-between;margin-bottom:4px;color:#64748B}
+.strow-tot .sv{color:#1E293B;font-size:13px}
+.strow-tot span:first-child{color:#1E293B;font-weight:600}
+.strow-info{color:#94A3B8;font-size:10.5px}
+.strow-info .sv{color:#94A3B8;font-weight:500}
+.strow-sell .sv{color:#0EA5E9;font-size:13px}
+.strow-sell span:first-child{color:#0EA5E9;font-weight:600}
+.sthr{border-top:1px solid #E2E8F0;margin:6px 0}
 .sv{font-weight:600;color:#1E293B}
 #ct{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #tb{background:#FFFFFF;border-bottom:1px solid #E2E8F0;padding:8px 14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
@@ -162,16 +169,20 @@ canvas{display:block;cursor:crosshair}
     <h3>&#21312;&#27573;</h3>
     <div id="sl"></div>
     <div id="stpan">
-      <h4>&#20840;&#22580;&#32113;&#35336;</h4>
-      <div class="strow"><span>&#21806;&#31080;</span><span class="sv" id="s1">-</span></div>
-      <div class="strow"><span>遊戲內贈票</span><span class="sv" id="s-game" style="color:#F59E0B">-</span></div>
-      <div class="strow"><span>贊助商公關票</span><span class="sv" id="s-sponsor" style="color:#10B981">-</span></div>
-      <div class="strow"><span>外部公關票</span><span class="sv" id="s-external" style="color:#8B5CF6">-</span></div>
+      <h4>全場統計</h4>
+      <div class="strow strow-tot"><span>總張數</span><span class="sv" id="s5">-</span></div>
+      <div class="strow"><span>未分配</span><span class="sv" id="s1">-</span></div>
+      <div class="sthr"></div>
       <div class="strow"><span>內部公關票</span><span class="sv" id="s-internal" style="color:#3B82F6">-</span></div>
+      <div class="strow"><span>外部公關票</span><span class="sv" id="s-external" style="color:#8B5CF6">-</span></div>
+      <div class="strow"><span>贊助商公關票</span><span class="sv" id="s-sponsor" style="color:#10B981">-</span></div>
+      <div class="strow"><span>遊戲內贈票</span><span class="sv" id="s-game" style="color:#F59E0B">-</span></div>
       <div class="strow"><span>員工自選票</span><span class="sv" id="s-employee" style="color:#EC4899">-</span></div>
-      <div class="strow" style="border-top:1px solid #E2E8F0;margin-top:6px;padding-top:6px">
-        <span>&#32317;&#35336;</span><span class="sv" id="s5">-</span>
-      </div>
+      <div class="sthr"></div>
+      <div class="strow strow-info"><span>&#9658; 視線遮蔽/不良區</span><span class="sv" id="s-obstruct">-</span></div>
+      <div class="strow strow-info"><span>&#9658; 場館保留席</span><span class="sv" id="s-venue">-</span></div>
+      <div class="sthr"></div>
+      <div class="strow strow-sell"><span>可售張數</span><span class="sv" id="s-sellable">-</span></div>
     </div>
   </div>
   <div id="ct">
@@ -294,14 +305,15 @@ var CONCERT_ZONE_COL = JSON.parse('{"\u7279A":"#E8509C","\u7279B":"#C070A8","B1\
 
 /* ── Active config ── */
 var SECTIONS,ZONE_CFG,ZONE_BD,ZONE_ORDER,ZONE_COLORS;
+var OBSTRUCT_COUNT=0,VENUE_COUNT=0;
 function isConcert(evt){return evt&&(evt.indexOf('Concert')>=0||evt.indexOf('演唱會')>=0);}
 function activateGCS(){
   SECTIONS=GCS_SECTIONS;ZONE_CFG=GCS_ZONE_CFG;ZONE_BD=GCS_ZONE_BD;
-  ZONE_ORDER=GCS_ZONE_ORD;ZONE_COLORS=GCS_ZONE_COL;rebuildWkSets();
+  ZONE_ORDER=GCS_ZONE_ORD;ZONE_COLORS=GCS_ZONE_COL;OBSTRUCT_COUNT=0;VENUE_COUNT=0;rebuildWkSets();
 }
 function activateConcert(){
   SECTIONS=CONCERT_SECTIONS;ZONE_CFG=CONCERT_ZONE_CFG;ZONE_BD=CONCERT_ZONE_BD;
-  ZONE_ORDER=CONCERT_ZONE_ORD;ZONE_COLORS=CONCERT_ZONE_COL;rebuildWkSets();
+  ZONE_ORDER=CONCERT_ZONE_ORD;ZONE_COLORS=CONCERT_ZONE_COL;OBSTRUCT_COUNT=2456;VENUE_COUNT=60;rebuildWkSets();
 }
 function rebuildWkSets(){
   wkSets={};
@@ -806,6 +818,9 @@ function updStats(){
   document.getElementById('s-internal').textContent=internal.toLocaleString();
   document.getElementById('s-employee').textContent=employee.toLocaleString();
   document.getElementById('s5').textContent=tot.toLocaleString();
+  var obEl=document.getElementById('s-obstruct');if(obEl)obEl.textContent=OBSTRUCT_COUNT.toLocaleString();
+  var veEl=document.getElementById('s-venue');if(veEl)veEl.textContent=VENUE_COUNT.toLocaleString();
+  var seEl=document.getElementById('s-sellable');if(seEl)seEl.textContent=(tot-OBSTRUCT_COUNT-VENUE_COUNT-assigned).toLocaleString();
 }
 
 /* ── export ── */
