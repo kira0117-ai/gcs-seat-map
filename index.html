@@ -228,6 +228,10 @@ canvas{display:block;cursor:crosshair}
   <div id="vmap"><h4>&#22580;&#39208;&#27010;&#35261;</h4></div>
   <div id="lp">
     <div id="lpHdr"><span>&#32232;&#36655;&#32000;&#37636;</span><span id="lpClose">&#215;</span></div>
+    <div id="lpSnapSec" style="border-bottom:2px solid #E2E8F0;background:#F8FAFC;">
+      <div style="padding:6px 10px;font-size:11px;font-weight:700;color:#64748B;display:flex;justify-content:space-between;align-items:center;">&#24050;&#23384;&#29256;&#26412;<button onclick="fbLoadSnapshots()" style="background:none;border:none;cursor:pointer;color:#3B82F6;font-size:11px;">&#8635; 重載</button></div>
+      <div id="lpSnapList" style="max-height:140px;overflow-y:auto;"><div style="color:#94A3B8;font-size:11px;padding:6px 10px;">尚無存檔</div></div>
+    </div>
     <div id="lpList"><div id="lpEmpty">&#23578;&#28961;&#32000;&#37636;</div></div>
   </div>
 
@@ -411,6 +415,27 @@ canvas{display:block;cursor:crosshair}
           else updates[path]=null; /* reject: delete */
         });
         fbDb.ref().update(updates).then(function(){ok&&ok();}).catch(function(e){fail&&fail(e);});
+      },
+      saveSnapshot:function(evtName,snapName,seats){
+        initFb();
+        var ts=Date.now();
+        fbDb.ref('events/'+fk(evtName)+'/snapshots/'+ts).set({name:snapName,ts:ts,seats:seats})
+          .then(function(){ok&&ok({ts:ts});}).catch(function(e){fail&&fail(e);});
+      },
+      getSnapshots:function(evtName){
+        initFb();
+        fbDb.ref('events/'+fk(evtName)+'/snapshots').once('value')
+          .then(function(snap){
+            var list=[];
+            snap.forEach(function(child){list.push(child.val());});
+            list.sort(function(a,b){return b.ts-a.ts;});
+            ok&&ok(list);
+          }).catch(function(){ok&&ok([]);});
+      },
+      restoreSnapshot:function(evtName,snapSeats){
+        initFb();
+        fbDb.ref('events/'+fk(evtName)+'/seats').set(snapSeats)
+          .then(function(){ok&&ok({ok:true});}).catch(function(e){fail&&fail(e);});
       }
     };
   }
@@ -533,10 +558,22 @@ function flushSave(){
     .withFailureHandler(function(){setSyncDot('err');addLog('\u5132\u5b58\u5931\u6557 \u2014 \u8acb\u91cd\u8a66',true);})
     .saveAssignments(curEvent,batch);
 }
-function manualSave(){clearTimeout(saveTimer);flushSave();addLog('\u624b\u52d5\u5132\u5b58',true);
-  var btn=document.getElementById('btnSave');
-  btn.textContent='✓ \u5132\u5b58\u4e2d...';btn.classList.add('saved');
-  setTimeout(function(){btn.textContent='\u5132\u5b58';btn.classList.remove('saved');},2000);
+function manualSave(){
+  if(!window.fbAdmin||!window.fbAdmin.isAdmin()){alert('儲存功能僅限管理員使用');return;}
+  var snapName=prompt('請輸入存檔名稱：');
+  if(snapName===null)return;
+  if(!snapName.trim())snapName='存檔 '+fmtTime();
+  var seats={};Object.keys(asgn).forEach(function(k){if(asgn[k])seats[k]=asgn[k];});
+  google.script.run
+    .withSuccessHandler(function(){
+      addLog('已儲存版本: '+snapName,true);
+      var btn=document.getElementById('btnSave');
+      btn.textContent='✓ 已儲存';btn.classList.add('saved');
+      setTimeout(function(){btn.textContent='儲存';btn.classList.remove('saved');},2000);
+      fbLoadSnapshots();
+    })
+    .withFailureHandler(function(e){addLog('存檔失敗: '+e,true);})
+    .saveSnapshot(curEvent,snapName,seats);
 }
 
 /* ── event management ── */
@@ -1020,7 +1057,7 @@ function expXls(){
 document.getElementById('expCsv').addEventListener('click',expCsv);
 document.getElementById('expXls').addEventListener('click',expXls);
 document.getElementById('btnSave').addEventListener('click',manualSave);
-document.getElementById('btnLog').addEventListener('click',function(){document.getElementById('lp').classList.toggle('open');});
+document.getElementById('btnLog').addEventListener('click',function(){var lp=document.getElementById('lp');lp.classList.toggle('open');if(lp.classList.contains('open'))fbLoadSnapshots();});
 document.getElementById('lpClose').addEventListener('click',function(){document.getElementById('lp').classList.remove('open');});
 document.getElementById('btnRefresh').addEventListener('click',function(){loadEvent(curEvent);addLog('\u624b\u52d5\u91cd\u65b0\u6574\u7406',true);});
 
@@ -1034,6 +1071,49 @@ google.script.run
   .withFailureHandler(function(){loadEvent('GCS 2026 SUMMER');})
   .getUser();
 
+
+/* ── Snapshot / version history ── */
+function fbLoadSnapshots(){
+  var el=document.getElementById('lpSnapList');
+  if(!el)return;
+  el.innerHTML='<div style="color:#94A3B8;font-size:11px;padding:6px 10px;">載入中...</div>';
+  google.script.run
+    .withSuccessHandler(function(list){
+      el.innerHTML='';
+      if(!list||!list.length){
+        el.innerHTML='<div style="color:#94A3B8;font-size:11px;padding:6px 10px;">尚無存檔</div>';
+        return;
+      }
+      list.forEach(function(snap){
+        var row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #F1F5F9;';
+        var info=document.createElement('div');
+        info.style.cssText='flex:1;min-width:0;';
+        info.innerHTML='<div style="font-size:12px;font-weight:600;color:#1E293B;">'+snap.name+'</div>'
+          +'<div style="font-size:10px;color:#94A3B8;">'+new Date(snap.ts).toLocaleString('zh-TW')+'</div>';
+        row.appendChild(info);
+        if(window.fbAdmin&&window.fbAdmin.isAdmin()){
+          var btn=document.createElement('button');
+          btn.textContent='還原';
+          btn.style.cssText='padding:2px 8px;background:#3B82F6;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;white-space:nowrap;';
+          btn.onclick=(function(s){return function(){fbRestoreSnap(s);};})(snap);
+          row.appendChild(btn);
+        }
+        el.appendChild(row);
+      });
+    })
+    .withFailureHandler(function(){el.innerHTML='<div style="color:#EF4444;font-size:11px;padding:6px 10px;">載入失敗</div>';})
+    .getSnapshots(curEvent);
+}
+function fbRestoreSnap(snap){
+  if(!window.fbAdmin||!window.fbAdmin.isAdmin()){alert('需要管理員權限');return;}
+  if(!snap.seats||!Object.keys(snap.seats).length){alert('此存檔沒有席位資料');return;}
+  if(!confirm('確定還原到「'+snap.name+'」？\n此操作會覆蓋目前所有席位！'))return;
+  google.script.run
+    .withSuccessHandler(function(){addLog('已還原至: '+snap.name,true);})
+    .withFailureHandler(function(e){addLog('還原失敗: '+e,true);})
+    .restoreSnapshot(curEvent,snap.seats);
+}
 
 /* ── Admin panel ── */
 function fbAdminToggle(){
