@@ -74,6 +74,8 @@ body{font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#F8FA
 .cb.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c);background:var(--c);color:#fff}
 .cb .dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex-shrink:0}
 .cb .ar{font-size:9px;color:#94A3B8;margin-left:1px}
+.cat-cnt{display:none;font-size:9px;font-weight:700;background:rgba(0,0,0,.12);color:#374151;padding:1px 5px;border-radius:8px;line-height:1.4}
+.cb.on .cat-cnt{background:rgba(255,255,255,.3);color:#fff}
 .smdrop{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:100;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:6px;min-width:150px;padding:4px;box-shadow:0 4px 12px rgba(0,0,0,.12)}
 .cb:hover .smdrop,.smdrop:hover{display:block}
 .smitem{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;cursor:pointer;font-size:12px;color:#374151;white-space:nowrap}
@@ -194,23 +196,23 @@ canvas{display:block;cursor:crosshair}
       <div class="cb on" style="--c:#4B9EDB" id="cb-zone"><span class="dot"></span>&#21407;&#22987;&#21312;&#22495;</div>
       <div class="divr"></div>
       <div class="cb" style="--c:#3B82F6" id="cb-internal">
-        <span class="dot"></span>內部公關票<span class="ar">&#9660;</span>
+        <span class="dot"></span>內部公關票<span class="cat-cnt" id="cc-internal"></span><span class="ar">&#9660;</span>
         <div class="smdrop" id="m-internal"><div class="smadd">&#65291; &#26032;&#22686;&#23376;&#38917;&#30446;</div></div>
       </div>
       <div class="cb" style="--c:#8B5CF6" id="cb-external">
-        <span class="dot"></span>外部公關票<span class="ar">&#9660;</span>
+        <span class="dot"></span>外部公關票<span class="cat-cnt" id="cc-external"></span><span class="ar">&#9660;</span>
         <div class="smdrop" id="m-external"><div class="smadd">&#65291; &#26032;&#22686;&#23376;&#38917;&#30446;</div></div>
       </div>
       <div class="cb" style="--c:#10B981" id="cb-sponsor">
-        <span class="dot"></span>贊助商公關票<span class="ar">&#9660;</span>
+        <span class="dot"></span>贊助商公關票<span class="cat-cnt" id="cc-sponsor"></span><span class="ar">&#9660;</span>
         <div class="smdrop" id="m-sponsor"><div class="smadd">&#65291; &#26032;&#22686;&#23376;&#38917;&#30446;</div></div>
       </div>
       <div class="cb" style="--c:#F59E0B" id="cb-game">
-        <span class="dot"></span>遊戲內贈票<span class="ar">&#9660;</span>
+        <span class="dot"></span>遊戲內贈票<span class="cat-cnt" id="cc-game"></span><span class="ar">&#9660;</span>
         <div class="smdrop" id="m-game"><div class="smadd">&#65291; &#26032;&#22686;&#23376;&#38917;&#30446;</div></div>
       </div>
       <div class="cb" style="--c:#EC4899" id="cb-employee">
-        <span class="dot"></span>員工自選票<span class="ar">&#9660;</span>
+        <span class="dot"></span>員工自選票<span class="cat-cnt" id="cc-employee"></span><span class="ar">&#9660;</span>
         <div class="smdrop" id="m-employee"><div class="smadd">&#65291; &#26032;&#22686;&#23376;&#38917;&#30446;</div></div>
       </div>
       <div class="divr"></div>
@@ -1012,6 +1014,8 @@ function updStats(){
   if(disRow)disRow.style.display=DISABILITY_COUNT>0?'':'none';
   if(disEl)disEl.textContent=DISABILITY_COUNT.toLocaleString();
   var seEl=document.getElementById('s-sellable');if(seEl)seEl.textContent=(tot-OBSTRUCT_COUNT-VENUE_COUNT-DISABILITY_COUNT-assigned).toLocaleString();
+  (function(){var map={internal:internal,external:external,sponsor:sponsor,game:game,employee:employee};
+  Object.keys(map).forEach(function(cat){var el=document.getElementById('cc-'+cat);if(!el)return;if(map[cat]>0){el.textContent=map[cat];el.style.display='inline-block';}else{el.style.display='none';}});})();
 }
 
 /* ── export ── */
