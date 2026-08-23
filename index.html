@@ -79,6 +79,7 @@ body{font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#F8FA
 .smdrop{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:100;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:6px;min-width:150px;padding:4px;box-shadow:0 4px 12px rgba(0,0,0,.12)}
 .cb:hover .smdrop,.smdrop:hover{display:block}
 .smitem{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;cursor:pointer;font-size:12px;color:#374151;white-space:nowrap}
+.sub-cnt{margin-left:auto;font-size:9px;font-weight:700;background:#EEF2FF;color:#4F46E5;padding:1px 5px;border-radius:8px;line-height:1.4;display:none;flex-shrink:0}
 .smitem:hover{background:#F8FAFC}
 .smadd{padding:5px 8px;font-size:11px;color:#8B5CF6;cursor:pointer;border-top:1px solid #E2E8F0;margin-top:2px;display:block}
 .smadd:hover{color:#A78BFA}
@@ -972,7 +973,7 @@ function rebuildMenu(par){
   var menu=document.getElementById('m-'+par);menu.innerHTML='';
   for(var i=0;i<subs[par].length;i++){
     var sc=subs[par][i],item=document.createElement('div');item.className='smitem';
-    item.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+sc.color+';display:inline-block;flex-shrink:0"></span>'+sc.label;
+    item.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+sc.color+';display:inline-block;flex-shrink:0"></span><span style="flex:1;min-width:0;">'+sc.label+'</span><span class="sub-cnt" data-subid="'+sc.id+'"></span>';
     (function(sc2){item.addEventListener('click',function(e){
       e.stopPropagation();setCat(par,sc2.id,sc2.label,sc2.color);
       var targetSec=null;
@@ -1016,6 +1017,8 @@ function updStats(){
   var seEl=document.getElementById('s-sellable');if(seEl)seEl.textContent=(tot-OBSTRUCT_COUNT-VENUE_COUNT-DISABILITY_COUNT-assigned).toLocaleString();
   (function(){var map={internal:internal,external:external,sponsor:sponsor,game:game,employee:employee};
   Object.keys(map).forEach(function(cat){var el=document.getElementById('cc-'+cat);if(!el)return;if(map[cat]>0){el.textContent=map[cat];el.style.display='inline-block';}else{el.style.display='none';}});})();
+  (function(){var sc={};for(var k in asgn){var a=asgn[k];if(a&&a.subId)sc[a.subId]=(sc[a.subId]||0)+1;}
+  document.querySelectorAll('.sub-cnt').forEach(function(el){var n=sc[el.getAttribute('data-subid')]||0;if(n>0){el.textContent=n;el.style.display='inline-block';}else{el.style.display='none';}});})();
 }
 
 /* ── export ── */
