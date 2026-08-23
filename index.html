@@ -228,6 +228,9 @@ canvas{display:block;cursor:crosshair}
     <div id="lpHdr"><span>&#32232;&#36655;&#32000;&#37636;</span><span id="lpClose">&#215;</span></div>
     <div id="lpList"><div id="lpEmpty">&#23578;&#28961;&#32000;&#37636;</div></div>
   </div>
+
+<button id="fbAdminBtn" onclick="fbAdminToggle()" style="font-size:11px;padding:3px 8px;border-radius:10px;border:1px solid #CBD5E1;background:#F8FAFC;cursor:pointer;color:#64748B;">&#128274; 管理員</button>
+<span id="fbPendingBadge" onclick="fbShowPending()" style="display:none;font-size:11px;padding:3px 8px;border-radius:10px;background:#F59E0B;color:#fff;cursor:pointer;font-weight:600;"></span>
 </div>
 <div id="selCount"></div>
 <div id="tooltip"></div>
@@ -238,46 +241,169 @@ canvas{display:block;cursor:crosshair}
     <div id="mbtns"><button id="mcancel">&#21462;&#28040;</button><button id="mok">&#26032;&#22686;</button></div>
   </div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
-/* ── localStorage shim (replaces google.script.run) ── */
+/* ── Firebase backend (real-time, multi-user, admin approval) ── */
 (function(){
-  var LS_EVT='gcs_events';
-  function stKey(e){return 'gcs_st_'+e;}
-  function getEvts(){try{var s=localStorage.getItem(LS_EVT);return s?JSON.parse(s):['GCS 2026 SUMMER','AOV 10th Concert'];}catch(x){return['GCS 2026 SUMMER','AOV 10th Concert'];}}
-  function getState(e){try{var s=localStorage.getItem(stKey(e));return s?JSON.parse(s):{asgn:{},subs:{pr:[],game:[],work:[]}};}catch(x){return{asgn:{},subs:{pr:[],game:[],work:[]}};}}
-  function saveState(e,st){try{localStorage.setItem(stKey(e),JSON.stringify(st));}catch(x){}}
+  var FB_CFG={
+    apiKey:"AIzaSyCWiBYdogR6r0fKZURycZevrtzAQtSUfOI",
+    authDomain:"aov-gcs-seat-2026.firebaseapp.com",
+    databaseURL:"https://aov-gcs-seat-2026-default-rtdb.firebaseio.com",
+    projectId:"aov-gcs-seat-2026",
+    storageBucket:"aov-gcs-seat-2026.firebasestorage.app",
+    messagingSenderId:"530976693724",
+    appId:"1:530976693724:web:e3fb1ed1d8a49322b6c319"
+  };
+  var ADMIN_PWD='gcs2026';
+  var fbDb=null,rtRef=null,rtHandler=null,curEvtFb='';
+
+  /* Admin helpers */
+  window.fbAdmin={
+    isAdmin:function(){return sessionStorage.getItem('gcs_adm')===ADMIN_PWD;},
+    login:function(p){if(p===ADMIN_PWD){sessionStorage.setItem('gcs_adm',p);return true;}return false;},
+    logout:function(){sessionStorage.removeItem('gcs_adm');}
+  };
+
+  /* Sanitize Firebase key: replace forbidden chars */
+  function fk(s){return String(s).replace(/[.#$\[\]\/]/g,'_');}
+
+  /* Init Firebase */
+  function initFb(){
+    if(fbDb)return;
+    try{
+      var app=firebase.initializeApp(FB_CFG);
+      fbDb=firebase.database();
+    }catch(e){console.warn('Firebase init:',e);}
+  }
+
+  /* Update the pending-approval badge in header */
+  function updPendingBadge(){
+    var badge=document.getElementById('fbPendingBadge');
+    if(!badge||typeof asgn==='undefined')return;
+    var cnt=Object.values(asgn).filter(function(v){return v&&v.status==='pending';}).length;
+    badge.textContent=cnt>0?'\u5f85\u78ba\u8a8d: '+cnt:'';
+    badge.style.display=cnt>0?'':'none';
+  }
+
+  /* Real-time listener: keeps global asgn in sync with Firebase */
+  function subscribeEvt(evtName){
+    if(!fbDb)return;
+    if(rtRef&&rtHandler){rtRef.off('value',rtHandler);}
+    curEvtFb=evtName;
+    rtRef=fbDb.ref('events/'+fk(evtName)+'/seats');
+    rtHandler=function(snap){
+      var data=snap.val()||{};
+      if(typeof asgn==='undefined')return;
+      /* clear & rebuild */
+      Object.keys(asgn).forEach(function(k){delete asgn[k];});
+      Object.keys(data).forEach(function(k){
+        var v=data[k];
+        if(v&&v.status!=='rejected'){
+          asgn[k]={cat:v.cat,subId:v.subId||'',label:v.label,color:v.color,status:v.status||'pending'};
+        }
+      });
+      /* redraw current section */
+      if(typeof curSec!=='undefined'&&curSec){
+        try{var b=getBounds(curSec);drawCvs(curSec,b[0],b[1],b[2],b[3]);updZonePills(curSec);updSecStat(curSec);}catch(e){}
+      }
+      try{if(typeof updStats!=='undefined')updStats();}catch(e){}
+      updPendingBadge();
+    };
+    rtRef.on('value',rtHandler);
+  }
+
   function mkProxy(ok,fail){
     return{
       withSuccessHandler:function(fn){return mkProxy(fn,fail);},
       withFailureHandler:function(fn){return mkProxy(ok,fn);},
-      getUser:function(){setTimeout(function(){ok&&ok({email:'本機使用者',isAdmin:true});},0);},
-      getEvents:function(){setTimeout(function(){ok&&ok(getEvts());},0);},
-      getState:function(name){setTimeout(function(){ok&&ok(getState(name));},0);},
-      saveAssignments:function(evtName,batch){
-        var st=getState(evtName);
-        batch.forEach(function(c){
-          if(c.action==='set'){var live=(typeof asgn!=='undefined')?asgn[c.key]:null;st.asgn[c.key]=live||{cat:c.cat,subId:c.subId||'',label:c.label,color:c.color,status:'final'};}
-          else delete st.asgn[c.key];
+      getUser:function(){
+        initFb();
+        var isAdm=window.fbAdmin.isAdmin();
+        setTimeout(function(){ok&&ok({email:isAdm?'\u7ba1\u7406\u54e1':'\u64cd\u4f5c\u54e1',isAdmin:isAdm});},0);
+      },
+      getEvents:function(){
+        initFb();
+        fbDb.ref('events').once('value').then(function(snap){
+          var keys=snap.val()?Object.keys(snap.val()):[];
+          if(!keys.length)keys=['GCS 2026 SUMMER'];
+          /* Restore original names from meta */
+          var names=[];
+          var done=0;
+          if(!keys.length){ok&&ok(['GCS 2026 SUMMER']);return;}
+          keys.forEach(function(k){
+            fbDb.ref('events/'+k+'/meta/name').once('value').then(function(s){
+              names.push(s.val()||k);
+              done++;
+              if(done===keys.length)ok&&ok(names);
+            });
+          });
+        }).catch(function(){ok&&ok(['GCS 2026 SUMMER']);});
+      },
+      getState:function(evtName){
+        initFb();
+        fbDb.ref('events/'+fk(evtName)+'/seats').once('value').then(function(snap){
+          var data=snap.val()||{};
+          var asgnOut={};
+          Object.keys(data).forEach(function(k){
+            var v=data[k];
+            if(v&&v.status!=='rejected')asgnOut[k]={cat:v.cat,subId:v.subId||'',label:v.label,color:v.color,status:v.status||'pending'};
+          });
+          fbDb.ref('events/'+fk(evtName)+'/subs').once('value').then(function(s2){
+            var subs=s2.val()||{pr:[],game:[],work:[]};
+            ok&&ok({asgn:asgnOut,subs:subs});
+            subscribeEvt(evtName);
+          });
+        }).catch(function(e){
+          ok&&ok({asgn:{},subs:{pr:[],game:[],work:[]}});
+          subscribeEvt(evtName);
         });
-        saveState(evtName,st);setTimeout(function(){ok&&ok({ok:true});},0);
+      },
+      saveAssignments:function(evtName,batch){
+        initFb();
+        var isAdm=window.fbAdmin.isAdmin();
+        var updates={};
+        batch.forEach(function(c){
+          var path='events/'+fk(evtName)+'/seats/'+fk(c.key);
+          if(c.action==='set'){
+            updates[path]={cat:c.cat,subId:c.subId||'',label:c.label,color:c.color,status:isAdm?'final':'pending',ts:Date.now()};
+          } else {
+            updates[path]=null;
+          }
+        });
+        fbDb.ref().update(updates).then(function(){
+          if(typeof setSyncDot!=='undefined')setSyncDot('ok');
+          ok&&ok({ok:true});
+        }).catch(function(e){
+          if(typeof setSyncDot!=='undefined')setSyncDot('err');
+          fail&&fail(e);
+        });
       },
       saveSubs:function(evtName,subs){
-        var st=getState(evtName);st.subs=subs;saveState(evtName,st);setTimeout(function(){ok&&ok({ok:true});},0);
+        initFb();
+        fbDb.ref('events/'+fk(evtName)+'/subs').set(subs)
+          .then(function(){ok&&ok({ok:true});})
+          .catch(function(e){fail&&fail(e);});
       },
       createEvent:function(name){
-        var evts=getEvts();if(evts.indexOf(name)<0)evts.push(name);localStorage.setItem(LS_EVT,JSON.stringify(evts));
-        setTimeout(function(){ok&&ok();},0);
+        initFb();
+        fbDb.ref('events/'+fk(name)+'/meta').set({name:name,created:Date.now()})
+          .then(function(){ok&&ok();}).catch(function(e){fail&&fail(e);});
       },
       confirmAssignments:function(evtName,keys,action){
-        var st=getState(evtName);
+        initFb();
+        var updates={};
         keys.forEach(function(k){
-          if(action==='confirm'&&st.asgn[k])st.asgn[k].status='final';
-          else if(action==='reject')delete st.asgn[k];
+          var path='events/'+fk(evtName)+'/seats/'+fk(k);
+          if(action==='confirm')updates[path+'/status']='final';
+          else updates[path]=null;
         });
-        saveState(evtName,st);setTimeout(function(){ok&&ok();},0);
+        fbDb.ref().update(updates).then(function(){ok&&ok();}).catch(function(e){fail&&fail(e);});
       }
     };
   }
+
+  try{initFb();}catch(e){console.warn('Firebase early init:',e);}
   window.google={script:{run:mkProxy(null,null)}};
 })();
 
@@ -680,7 +806,10 @@ function drawCvs(sec,minR,maxR,minS,maxS){
   for(var k in sPos){
     var pos=sPos[k],ak=sec+'-'+pos.r+'-'+pos.s;
     var col=wk.has(k)?'#374151':(asgnColor(ak)||(ZONE_CFG[pos.z]?ZONE_CFG[pos.z].color:'#94A3B8'));
+    var isPending=!wk.has(k)&&asgn[ak]&&asgn[ak].status==='pending';
+    if(isPending)ctx2.globalAlpha=0.5;
     ctx2.fillStyle=col;ctx2.fillRect(pos.x,pos.y,CELL,CELL);
+    if(isPending){ctx2.globalAlpha=1;ctx2.strokeStyle='#F59E0B';ctx2.lineWidth=1.2;ctx2.strokeRect(pos.x+0.6,pos.y+0.6,CELL-1.2,CELL-1.2);}
   }
   if(isDrag&&dStart&&dEnd){
     var x1=Math.min(dStart.x,dEnd.x),y1=Math.min(dStart.y,dEnd.y);
