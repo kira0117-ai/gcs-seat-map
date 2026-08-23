@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -408,7 +408,7 @@ canvas{display:block;cursor:crosshair}
         keys.forEach(function(k){
           var path='events/'+fk(evtName)+'/seats/'+fk(k);
           if(action==='confirm')updates[path+'/status']='final';
-          else updates[path]=null;
+          else updates[path]=null; /* reject: delete */
         });
         fbDb.ref().update(updates).then(function(){ok&&ok();}).catch(function(e){fail&&fail(e);});
       }
@@ -855,8 +855,10 @@ function mUp(e){
       var ak=curSec+'-'+pos.r+'-'+pos.s;
       if(pos.x>=x1-PITCH&&pos.x<=x2&&pos.y>=y1-PITCH&&pos.y<=y2){
         var key2=curSec+'-'+pos.r+'-'+pos.s;
-        if(isZone){delete asgn[ak];chs.push({key:key2,action:'delete'});}
-        else if(asgn[ak]&&!window.fbAdmin.isAdmin()){/* seat occupied, skip */}
+        if(isZone&&!(asgn[ak]&&asgn[ak].status==='final'&&!window.fbAdmin.isAdmin())){delete asgn[ak];chs.push({key:key2,action:'delete'});}
+        else if(asgn[ak]&&asgn[ak].status==='final'&&!window.fbAdmin.isAdmin()){/* final: skip */}
+        else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&asgn[ak].subId===actCat.subId&&!window.fbAdmin.isAdmin()){delete asgn[ak];chs.push({key:key2,action:'delete'});}
+        else if(asgn[ak]&&!window.fbAdmin.isAdmin()){/* pending diff cat: skip */}
         else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});}
         changed++;
       }
@@ -867,9 +869,10 @@ function mUp(e){
     var hit=getSeat(p.x,p.y);
     if(hit&&!wk.has(hit.k)&&!(ZONE_CFG[hit.p.z]&&ZONE_CFG[hit.p.z].noSelect)){
       var ak=curSec+'-'+hit.p.r+'-'+hit.p.s,key2=curSec+'-'+hit.p.r+'-'+hit.p.s;
-      if(isZone){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=1;}
-      else if(asgn[ak]&&!window.fbAdmin.isAdmin()){addLog('此座位已被佔用，請等候管理員確認: '+ak);undoStack.pop();changed=0;}
+      if(isZone&&!(asgn[ak]&&asgn[ak].status==='final'&&!window.fbAdmin.isAdmin())){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=1;}
+      else if(asgn[ak]&&asgn[ak].status==='final'&&!window.fbAdmin.isAdmin()){addLog('座位已確認，無法修改: '+ak);undoStack.pop();changed=0;}
       else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&asgn[ak].subId===actCat.subId){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=-1;}
+      else if(asgn[ak]&&!window.fbAdmin.isAdmin()){addLog('座位待確認，無法變更類別: '+ak);undoStack.pop();changed=0;}
       else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});changed=1;}
       if(changed!==0){addLog((isZone||changed<0)?'\u6e05\u9664 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f':'\u6a19\u8a18 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f'+' > '+actCat.label);queueSave(chs);}
       else undoStack.pop();
@@ -1052,21 +1055,111 @@ function fbAdminToggle(){
     }
   }
 }
-function fbShowPending(){
+
+/* ── Per-seat approval panel ── */
+function fbBuildPanel(){
+  var existing=document.getElementById('fbApprovalPanel');
+  if(existing)existing.parentNode.removeChild(existing);
   if(!window.fbAdmin.isAdmin()){alert('需要管理員權限！');return;}
   var pending=Object.entries(asgn).filter(function(e){return e[1]&&e[1].status==='pending';});
   if(!pending.length){alert('目前沒有待確認席位');return;}
-  var lines=pending.map(function(e,i){return (i+1)+'. '+e[0]+' → '+e[1].label;});
-  var msg='\u5f85\u78ba\u8a8d\u5e2d\u4f4d\uff08'+pending.length+'\u5e2d\uff09\uff1a\n\n'+lines.join('\n')+'\n\n\u9ede\u78ba\u5b9a\u5c07\u5168\u90e8\u78ba\u8a8d\u70ba final\uff0c\u53d6\u6d88\u5c31\u4e0d\u52d5\u4f5c\u3002';
-  if(confirm(msg)){
-    var keys=pending.map(function(e){return e[0];});
-    google.script.run.withSuccessHandler(function(){
-      addLog('確認 '+keys.length+' 席完成');
-    }).withFailureHandler(function(e){
-      addLog('確認失敗: '+e);
-    }).confirmAssignments(curEvent,keys,'confirm');
+  pending.sort(function(a,b){return a[0]<b[0]?-1:1;});
+  var panel=document.createElement('div');
+  panel.id='fbApprovalPanel';
+  panel.style.cssText='position:fixed;top:50px;right:16px;width:340px;max-height:80vh;background:#fff;border:1px solid #E2E8F0;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:9999;display:flex;flex-direction:column;font-family:inherit;font-size:13px;';
+  var hdr=document.createElement('div');
+  hdr.style.cssText='padding:12px 16px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;background:#FEF3C7;border-radius:12px 12px 0 0;';
+  hdr.innerHTML='<span style="font-weight:700;color:#92400E;">待確認席位（<span id="fbPanelCount">'+pending.length+'</span>席）</span>'+'<button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#92400E;line-height:1;">×</button>';
+  panel.appendChild(hdr);
+  var btnRow=document.createElement('div');
+  btnRow.style.cssText='padding:8px 12px;display:flex;gap:6px;border-bottom:1px solid #F1F5F9;';
+  var btnAll=document.createElement('button');
+  btnAll.textContent='全部確認';
+  btnAll.style.cssText='flex:1;padding:5px;background:#10B981;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;';
+  btnAll.onclick=function(){fbConfirmAll(pending.map(function(e){return e[0];}));};
+  var btnAllR=document.createElement('button');
+  btnAllR.textContent='全部拒絕';
+  btnAllR.style.cssText='flex:1;padding:5px;background:#EF4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;';
+  btnAllR.onclick=function(){fbRejectAll(pending.map(function(e){return e[0];}));};
+  btnRow.appendChild(btnAll);
+  btnRow.appendChild(btnAllR);
+  panel.appendChild(btnRow);
+  var list=document.createElement('div');
+  list.id='fbApprovalList';
+  list.style.cssText='overflow-y:auto;flex:1;padding:4px 0;';
+  pending.forEach(function(entry){
+    var k=entry[0],v=entry[1];
+    var row=document.createElement('div');
+    row.id='fbrow-'+k.replace(/[^a-zA-Z0-9]/g,'_');
+    row.style.cssText='display:flex;align-items:center;padding:6px 12px;border-bottom:1px solid #F8FAFC;gap:8px;';
+    var dot=document.createElement('span');
+    dot.style.cssText='width:8px;height:8px;border-radius:50%;background:'+(v.color||'#94A3B8')+';flex-shrink:0;display:inline-block;';
+    var info=document.createElement('div');
+    info.style.cssText='flex:1;min-width:0;';
+    info.innerHTML='<div style="font-weight:600;color:#1E293B;font-size:12px;">'+k+'</div><div style="color:#64748B;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+v.label+'</div>';
+    var btnY=document.createElement('button');
+    btnY.textContent='確認';
+    btnY.style.cssText='padding:3px 8px;background:#10B981;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;white-space:nowrap;';
+    btnY.onclick=(function(key){return function(){fbConfirmOne(key);};})(k);
+    var btnN=document.createElement('button');
+    btnN.textContent='拒絕';
+    btnN.style.cssText='padding:3px 8px;background:#EF4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;white-space:nowrap;';
+    btnN.onclick=(function(key){return function(){fbRejectOne(key);};})(k);
+    row.appendChild(dot);
+    row.appendChild(info);
+    row.appendChild(btnY);
+    row.appendChild(btnN);
+    list.appendChild(row);
+  });
+  panel.appendChild(list);
+  document.body.appendChild(panel);
+}
+function fbUpdBadge(delta){
+  var badge=document.getElementById('fbPendingBadge');
+  if(!badge)return;
+  var n=parseInt(badge.textContent.replace(/[^0-9]/g,''),10)+(delta||0);
+  if(isNaN(n))n=0;
+  badge.textContent=n>0?'待確認: '+n:'';
+  badge.style.display=n>0?'':'none';
+}
+function fbRemovePanelRow(key){
+  var rowId='fbrow-'+key.replace(/[^a-zA-Z0-9]/g,'_');
+  var row=document.getElementById(rowId);
+  if(row)row.remove();
+  var countEl=document.getElementById('fbPanelCount');
+  if(countEl){
+    var remaining=document.querySelectorAll('#fbApprovalList > div').length;
+    countEl.textContent=remaining;
+    if(!remaining){var p=document.getElementById('fbApprovalPanel');if(p)p.remove();}
   }
 }
+function fbConfirmOne(key){
+  google.script.run
+    .withSuccessHandler(function(){addLog('確認: '+key);fbRemovePanelRow(key);fbUpdBadge(-1);})
+    .withFailureHandler(function(e){addLog('確認失敗: '+e);})
+    .confirmAssignments(curEvent,[key],'confirm');
+}
+function fbRejectOne(key){
+  google.script.run
+    .withSuccessHandler(function(){addLog('拒絕: '+key);fbRemovePanelRow(key);fbUpdBadge(-1);})
+    .withFailureHandler(function(e){addLog('拒絕失敗: '+e);})
+    .confirmAssignments(curEvent,[key],'reject');
+}
+function fbConfirmAll(keys){
+  if(!confirm('確認將 '+keys.length+' 席全部改為已確認？'))return;
+  google.script.run
+    .withSuccessHandler(function(){addLog('已確認 '+keys.length+' 席');var p=document.getElementById('fbApprovalPanel');if(p)p.remove();})
+    .withFailureHandler(function(e){addLog('失敗: '+e);})
+    .confirmAssignments(curEvent,keys,'confirm');
+}
+function fbRejectAll(keys){
+  if(!confirm('確認將 '+keys.length+' 席全部拒絕？'))return;
+  google.script.run
+    .withSuccessHandler(function(){addLog('已拒絕 '+keys.length+' 席');var p=document.getElementById('fbApprovalPanel');if(p)p.remove();})
+    .withFailureHandler(function(e){addLog('失敗: '+e);})
+    .confirmAssignments(curEvent,keys,'reject');
+}
+function fbShowPending(){fbBuildPanel();}
 /* Restore admin badge on load if already logged in */
 (function checkAdminOnLoad(){
   if(window.fbAdmin&&window.fbAdmin.isAdmin()){
