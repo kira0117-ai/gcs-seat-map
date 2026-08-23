@@ -857,7 +857,7 @@ function mUp(e){
         var key2=curSec+'-'+pos.r+'-'+pos.s;
         if(isZone&&window.fbAdmin.isAdmin()){delete asgn[ak];chs.push({key:key2,action:'delete'});}
         else if(asgn[ak]&&asgn[ak].status==='final'&&!window.fbAdmin.isAdmin()){/* final: skip */}
-        else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&asgn[ak].subId===actCat.subId&&!window.fbAdmin.isAdmin()){delete asgn[ak];chs.push({key:key2,action:'delete'});}
+        else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&(asgn[ak].subId||"")===(actCat.subId||"")&&!window.fbAdmin.isAdmin()){delete asgn[ak];chs.push({key:key2,action:'delete'});}
         else if(asgn[ak]&&!window.fbAdmin.isAdmin()){/* pending diff cat: skip */}
         else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});}
         changed++;
@@ -871,7 +871,7 @@ function mUp(e){
       var ak=curSec+'-'+hit.p.r+'-'+hit.p.s,key2=curSec+'-'+hit.p.r+'-'+hit.p.s;
       if(isZone&&window.fbAdmin.isAdmin()){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=1;}
       else if(asgn[ak]&&asgn[ak].status==='final'&&!window.fbAdmin.isAdmin()){addLog('座位已確認，無法修改: '+ak);undoStack.pop();changed=0;}
-      else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&asgn[ak].subId===actCat.subId){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=-1;}
+      else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&(asgn[ak].subId||'')===(actCat.subId||'')){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=-1;}
       else if(asgn[ak]&&!window.fbAdmin.isAdmin()){addLog('座位待確認，無法變更類別: '+ak);undoStack.pop();changed=0;}
       else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});changed=1;}
       if(changed!==0){addLog((isZone||changed<0)?'\u6e05\u9664 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f':'\u6a19\u8a18 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f'+' > '+actCat.label);queueSave(chs);}
@@ -898,6 +898,7 @@ function mMove(e){
 
 /* ── category ── */
 function setCat(cat,subId,label,color){
+  if(cat!=='employee'&&!window.fbAdmin.isAdmin()){addLog('只有管理員可以選擇此類別');return;}
   actCat={cat:cat,subId:subId,label:label,color:color};
   document.querySelectorAll('.cb').forEach(function(b){b.classList.remove('on');});
   var el=document.getElementById('cb-'+cat);if(el)el.classList.add('on');
