@@ -362,16 +362,28 @@ canvas{display:block;cursor:crosshair}
       saveAssignments:function(evtName,batch){
         initFb();
         var isAdm=window.fbAdmin.isAdmin();
-        var updates={};
-        batch.forEach(function(c){
+        var promises=batch.map(function(c){
           var path='events/'+fk(evtName)+'/seats/'+fk(c.key);
-          if(c.action==='set'){
-            updates[path]={cat:c.cat,subId:c.subId||'',label:c.label,color:c.color,status:isAdm?'final':'pending',ts:Date.now()};
-          } else {
-            updates[path]=null;
+          if(c.action!=='set'){return fbDb.ref(path).set(null);}
+          if(isAdm){
+            return fbDb.ref(path).set({cat:c.cat,subId:c.subId||'',label:c.label,color:c.color,status:'final',ts:Date.now()});
           }
+          /* Non-admin: use transaction to prevent double-booking */
+          return fbDb.ref(path).transaction(function(cur){
+            if(cur!==null)return; /* seat taken - abort */
+            return {cat:c.cat,subId:c.subId||'',label:c.label,color:c.color,status:'pending',ts:Date.now()};
+          }).then(function(res){
+            if(!res.committed){
+              /* Seat was already taken - revert local asgn and redraw */
+              if(typeof asgn!=='undefined')delete asgn[c.key];
+              if(typeof addLog!=='undefined')addLog('座位已被搞走: '+c.key);
+              if(typeof curSec!=='undefined'&&curSec){
+                try{var b=getBounds(curSec);drawCvs(curSec,b[0],b[1],b[2],b[3]);updZonePills(curSec);updSecStat(curSec);}catch(e){}
+              }
+            }
+          });
         });
-        fbDb.ref().update(updates).then(function(){
+        Promise.all(promises).then(function(){
           if(typeof setSyncDot!=='undefined')setSyncDot('ok');
           ok&&ok({ok:true});
         }).catch(function(e){
@@ -511,7 +523,7 @@ function addLog(msg,isSys){
 /* ── server sync ── */
 function queueSave(changes){
   pendingBatch=pendingBatch.concat(changes);clearTimeout(saveTimer);
-  saveTimer=setTimeout(flushSave,800);setSyncDot('pending');
+  saveTimer=setTimeout(flushSave,100);setSyncDot('pending');
 }
 function flushSave(){
   if(!pendingBatch.length)return;
@@ -1019,7 +1031,56 @@ google.script.run
   .getUser();
 
 
+/* ── Admin panel ── */
+function fbAdminToggle(){
+  if(window.fbAdmin.isAdmin()){
+    if(confirm('登出管理員模式？')){
+      window.fbAdmin.logout();
+      document.getElementById('fbAdminBtn').style.background='';
+      document.getElementById('fbAdminBtn').style.color='';
+      addLog('已登出管理員模式');
+    }
+  }else{
+    var pwd=prompt('請輸入管理員密碼：');
+    if(pwd===null)return;
+    if(window.fbAdmin.login(pwd)){
+      document.getElementById('fbAdminBtn').style.background='#FEF3C7';
+      document.getElementById('fbAdminBtn').style.color='#92400E';
+      addLog('管理員登入成功');
+    }else{
+      alert('密碼錯誤！');
+    }
+  }
+}
+function fbShowPending(){
+  if(!window.fbAdmin.isAdmin()){alert('需要管理員權限！');return;}
+  var pending=Object.entries(asgn).filter(function(e){return e[1]&&e[1].status==='pending';});
+  if(!pending.length){alert('目前沒有待確認席位');return;}
+  var lines=pending.map(function(e,i){return (i+1)+'. '+e[0]+' → '+e[1].label;});
+  var msg='待確認席位（'+pending.length+'席）：
+
+'+lines.join('
+')+'
+
+點確定將全部確認為 final，取消就不動作。';
+  if(confirm(msg)){
+    var keys=pending.map(function(e){return e[0];});
+    google.script.run.withSuccessHandler(function(){
+      addLog('確認 '+keys.length+' 席完成');
+    }).withFailureHandler(function(e){
+      addLog('確認失敗: '+e);
+    }).confirmAssignments(curEvent,keys,'confirm');
+  }
+}
+/* Restore admin badge on load if already logged in */
+(function checkAdminOnLoad(){
+  if(window.fbAdmin&&window.fbAdmin.isAdmin()){
+    var btn=document.getElementById('fbAdminBtn');
+    if(btn){btn.style.background='#FEF3C7';btn.style.color='#92400E';}
+  }
+})();
+
 /* ── venue map image ── */
-document.getElementById('mapModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});</script>
+(function(){var mm=document.getElementById('mapModal');if(mm)mm.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});})();</script>
 <div id="mapModal"><div class="mmInner"><button class="mmClose" onclick="document.getElementById('mapModal').classList.remove('open')">&#x2715;</button><img id="mapImg" src="" alt="&#22330;&#39208;&#22294;"></div></div></body>
 </html>
