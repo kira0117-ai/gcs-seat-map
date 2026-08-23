@@ -605,6 +605,7 @@ function renderSec(sec){
     hdr.appendChild(pill);
   }
   if(d.work.length){var wp=document.createElement('span');wp.className='zpill';wp.style.background='#374151';wp.textContent='\u5167\u90e8\u7968 '+d.work.length;hdr.appendChild(wp);}
+  var clrSecBtn=document.createElement('button');clrSecBtn.className='clrbtn';clrSecBtn.textContent='\u6e05\u9664\u6b64\u5340';clrSecBtn.style.marginLeft='auto';clrSecBtn.onclick=function(){if(!confirm('\u78ba\u5b9a\u6e05\u9664 '+sec+' \u6240\u6709\u5206\u914d\uff1f'))return;pushUndo();Object.keys(asgn).filter(function(k){return k.indexOf(sec+'-')===0;}).forEach(function(k){delete asgn[k];});manualSave();renderSec(sec);updStats();};hdr.appendChild(clrSecBtn);
   cw.appendChild(hdr);updZonePills(sec);
   var b=getBounds(sec),minR=b[0],maxR=b[1],minS=b[2],maxS=b[3];
   var cw2=RLW+(maxS-minS+1)*PITCH+4,ch2=CLH+(maxR-minR+1)*PITCH+4;
