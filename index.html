@@ -563,7 +563,8 @@ function manualSave(){
   var snapName=prompt('請輸入存檔名稱：');
   if(snapName===null)return;
   if(!snapName.trim())snapName='存檔 '+fmtTime();
-  var seats={};Object.keys(asgn).forEach(function(k){if(asgn[k])seats[k]=asgn[k];});
+  var seats={};Object.keys(asgn).forEach(function(k){if(asgn[k]&&asgn[k].cat)seats[k]=asgn[k];});
+  seats=JSON.parse(JSON.stringify(seats));
   google.script.run
     .withSuccessHandler(function(){
       addLog('已儲存版本: '+snapName,true);
