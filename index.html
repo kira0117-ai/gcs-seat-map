@@ -156,6 +156,8 @@ canvas{display:block;cursor:crosshair}
   <button id="btnSave" class="hbtn">&#x1F4BE; &#20581;&#23384;</button>
   <button id="btnRefresh" class="hbtn">&#8635; &#37325;&#26032;&#25972;&#29702;</button>
   <button id="btnLog" class="hbtn">&#128203; &#32000;&#37636;</button>
+  <button id="fbAdminBtn" onclick="fbAdminToggle()" style="font-size:11px;padding:3px 8px;border-radius:10px;border:1px solid #CBD5E1;background:#F8FAFC;cursor:pointer;color:#64748B;font-family:inherit;">&#128274; 管理員</button>
+  <span id="fbPendingBadge" onclick="fbShowPending()" style="display:none;font-size:11px;padding:3px 8px;border-radius:10px;background:#F59E0B;color:#fff;cursor:pointer;font-weight:600;"></span>
   <div id="expWrap">
     <button id="btnExp">&#21295;&#20986; &#9660;</button>
     <div id="expDrop">
@@ -229,8 +231,6 @@ canvas{display:block;cursor:crosshair}
     <div id="lpList"><div id="lpEmpty">&#23578;&#28961;&#32000;&#37636;</div></div>
   </div>
 
-<button id="fbAdminBtn" onclick="fbAdminToggle()" style="font-size:11px;padding:3px 8px;border-radius:10px;border:1px solid #CBD5E1;background:#F8FAFC;cursor:pointer;color:#64748B;">&#128274; 管理員</button>
-<span id="fbPendingBadge" onclick="fbShowPending()" style="display:none;font-size:11px;padding:3px 8px;border-radius:10px;background:#F59E0B;color:#fff;cursor:pointer;font-weight:600;"></span>
 </div>
 <div id="selCount"></div>
 <div id="tooltip"></div>
@@ -844,6 +844,7 @@ function mUp(e){
       if(pos.x>=x1-PITCH&&pos.x<=x2&&pos.y>=y1-PITCH&&pos.y<=y2){
         var key2=curSec+'-'+pos.r+'-'+pos.s;
         if(isZone){delete asgn[ak];chs.push({key:key2,action:'delete'});}
+        else if(asgn[ak]&&!window.fbAdmin.isAdmin()){/* seat occupied, skip */}
         else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});}
         changed++;
       }
@@ -855,6 +856,7 @@ function mUp(e){
     if(hit&&!wk.has(hit.k)&&!(ZONE_CFG[hit.p.z]&&ZONE_CFG[hit.p.z].noSelect)){
       var ak=curSec+'-'+hit.p.r+'-'+hit.p.s,key2=curSec+'-'+hit.p.r+'-'+hit.p.s;
       if(isZone){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=1;}
+      else if(asgn[ak]&&!window.fbAdmin.isAdmin()){addLog('此座位已被佔用，請等候管理員確認: '+ak);undoStack.pop();changed=0;}
       else if(asgn[ak]&&asgn[ak].cat===actCat.cat&&asgn[ak].subId===actCat.subId){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=-1;}
       else{asgn[ak]={cat:actCat.cat,subId:actCat.subId,label:actCat.label,color:actCat.color,status:'final'};chs.push({key:key2,action:'set',cat:actCat.cat,subId:actCat.subId||'',label:actCat.label,color:actCat.color});changed=1;}
       if(changed!==0){addLog((isZone||changed<0)?'\u6e05\u9664 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f':'\u6a19\u8a18 '+secLbl(curSec)+' '+hit.p.r+'\u6392'+hit.p.s+'\u865f'+' > '+actCat.label);queueSave(chs);}
