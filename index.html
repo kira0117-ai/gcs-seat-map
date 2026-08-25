@@ -2,6 +2,9 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GCS / AOV &#24231;&#20301;&#31995;&#32113;</title>
 <style>
@@ -951,14 +954,14 @@ document.getElementById('btnClr').addEventListener('click',function(){actCat=nul
     if(!cb.querySelector('.smdrop'))return;
     cb.addEventListener('click',function(e){
       if(e.target.closest('.smdrop'))return;
-      e.stopPropagation();
       var wasOpen=cb.classList.contains('drop-open');
       document.querySelectorAll('.cb.drop-open').forEach(function(x){x.classList.remove('drop-open');});
       if(!wasOpen)cb.classList.add('drop-open');
     });
   });
-  document.addEventListener('click',function(){
-    document.querySelectorAll('.cb.drop-open').forEach(function(x){x.classList.remove('drop-open');});
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.cb'))
+      document.querySelectorAll('.cb.drop-open').forEach(function(x){x.classList.remove('drop-open');});
   });
 })();
 document.getElementById('cb-zone').addEventListener('click',function(){setCat('zone',null,'\u539f\u59cb\u5340\u57df','#4B9EDB');});
