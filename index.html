@@ -178,9 +178,7 @@ canvas{display:block;cursor:crosshair}
     <div id="sl"></div>
     <div id="stpan">
       <h4>全場統計</h4>
-      <div class="strow strow-tot"><span>總張數</span><span class="sv" id="s5">-</span></div>
-      <div class="strow"><span>未分配</span><span class="sv" id="s1">-</span></div>
-      <div class="sthr"></div>
+                  <div class="sthr"></div>
       <div class="strow"><span>內部公關票</span><span class="sv" id="s-internal" style="color:#3B82F6">-</span></div>
       <div class="strow"><span>外部公關票</span><span class="sv" id="s-external" style="color:#8B5CF6">-</span></div>
       <div class="strow"><span>贊助商公關票</span><span class="sv" id="s-sponsor" style="color:#10B981">-</span></div>
@@ -189,12 +187,9 @@ canvas{display:block;cursor:crosshair}
       <div class="sthr"></div>
       <div class="strow strow-info"><span>&#9658; 視線遮蔽/不良區</span><span class="sv" id="s-obstruct">-</span></div>
       <div class="strow strow-info"><span>&#9658; 場館保留席</span><span class="sv" id="s-venue">-</span></div>
-      <div class="strow strow-info" id="s-disability-row" style="display:none"><span>&#9658; 無障礙席</span><span class="sv" id="s-disability">-</span></div>
+      <div class="strow strow-info" id="s-disability-row"><span>&#9658; 無障礙席+陪伴</span><span class="sv" id="s-disability">-</span></div>
       <div class="sthr"></div>
-      <div class="strow strow-info"><span>&#9658; 空位區</span><span class="sv" id="s-kw">-</span></div>
-      <div class="strow strow-info"><span>&#9658; 輪椅+陪伴席</span><span class="sv" id="s-wc">-</span></div>
-      <div class="strow strow-sell"><span>可售張數</span><span class="sv" id="s-sellable">-</span></div>
-    </div>
+                      </div>
   </div>
   <div id="ct">
     <div id="tb">
@@ -471,7 +466,7 @@ var CONCERT_ZONE_BD={};
     if(zone)CONCERT_ZONE_BD[k][zone]=CONCERT_SECTIONS[k].seats.length;
   }
 })();
-var CONCERT_ZONE_CFG=JSON.parse('{"特A":{"color":"#E8509C","label":"特A NT$3,490"},"特B":{"color":"#C070A8","label":"特B NT$2,890"},"B1看台":{"color":"#2563EB","label":"B1看台 NT$2,890"},"L2看台":{"color":"#F5C0D4","label":"L2看台 NT$2,490"},"L3看台":{"color":"#B090CC","label":"L3看台 NT$1,490"},"L4看台":{"color":"#6040A8","label":"L4/L5 NT$790"},"L5看台":{"color":"#2030A0","label":"L5看台 NT$790"},"無障礙席":{"color":"#60A5FA","label":"無障礙席"},"視線不良":{"color":"#EF4444","label":"視線不良","noSelect":true,"noCount":true},"工作席":{"color":"#374151","label":"工作席","noSelect":true,"noCount":true},"場館保留席":{"color":"#6B7280","label":"場館保留席","noSelect":true,"noCount":true},"無障礙佔位":{"color":"#60A5FA","noSelect":true,"noCount":true},"陪伴佔位":{"color":"#93C5FD","noSelect":true,"noCount":true}}');
+var CONCERT_ZONE_CFG=JSON.parse('{"特A":{"color":"#E8509C","label":"特A NT$3,490"},"特B":{"color":"#C070A8","label":"特B NT$2,890"},"B1看台":{"color":"#2563EB","label":"B1看台 NT$2,890"},"L2看台":{"color":"#F5C0D4","label":"L2看台 NT$2,490"},"L3看台":{"color":"#B090CC","label":"L3看台 NT$1,490"},"L4看台":{"color":"#6040A8","label":"L4/L5 NT$790"},"L5看台":{"color":"#2030A0","label":"L5看台 NT$790"},"無障礙席":{"color":"#60A5FA","label":"無障礙席"},"視線不良":{"color":"#EF4444","label":"視線遮蔽/不良區","noSelect":true,"noCount":true},"場館保留席":{"color":"#374151","label":"場館保留席","noSelect":true,"noCount":true},"無障礙佔位":{"color":"#60A5FA","noSelect":true,"noCount":true},"陪伴佔位":{"color":"#93C5FD","noSelect":true,"noCount":true},"陪伴席":{"color":"#93C5FD","label":"陪伴席"}}');
 var CONCERT_ZONE_ORD = JSON.parse('["\u7279A","\u7279B","B1\u770b\u53f0","L2\u770b\u53f0","L3\u770b\u53f0","L4\u770b\u53f0","L5\u770b\u53f0"]');
 var CONCERT_ZONE_COL = JSON.parse('{"\u7279A":"#E8509C","\u7279B":"#C070A8","B1\u770b\u53f0":"#2563EB","L2\u770b\u53f0":"#F5C0D4","L3\u770b\u53f0":"#B090CC","L4\u770b\u53f0":"#6040A8","L5\u770b\u53f0":"#2030A0"}');
 
@@ -814,17 +809,16 @@ function renderSec(sec){
   }
   drawCvs(sec,minR,maxR,minS,maxS);
   var leg=document.createElement('div');leg.id='legend';var lh='';
-  for(var zi=0;zi<ZONE_ORDER.length;zi++){
-    var zc=ZONE_CFG[ZONE_ORDER[zi]];if(!zc||zc.noSelect||zc.noCount)continue;
-    lh+='<span class="litem"><span class="ldot" style="background:'+zc.color+'"></span>'+zc.label+'</span>';
-  }
-  lh+='<span class="litem"><span class="ldot" style="background:#374151"></span>\u5de5\u4f5c\u5e2d</span>';
-  lh+='<span class="litem"><span class="ldot" style="background:#93C5FD"></span>\u966a\u4f34\u5e2d</span>';
+  /* ticket type chips */
   lh+='<span class="litem"><span class="ldot" style="background:#3B82F6"></span>\u5167\u90e8\u516c\u95dc\u7968</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#8B5CF6"></span>\u5916\u90e8\u516c\u95dc\u7968</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#10B981"></span>\u8d0a\u52a9\u5546\u516c\u95dc\u7968</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#F59E0B"></span>\u904a\u6232\u5167\u8d08\u7968</span>';
   lh+='<span class="litem"><span class="ldot" style="background:#EC4899"></span>\u54e1\u5de5\u81ea\u9078\u7968</span>';
+  /* special zone chips */
+  lh+='<span class="litem litem-info"><span class="ldot" style="background:#EF4444"></span>\u8996\u7dda\u9047\u853d/\u4e0d\u826f\u5340</span>';
+  lh+='<span class="litem litem-info"><span class="ldot" style="background:#374151"></span>\u5834\u9928\u4fdd\u7559\u5e2d</span>';
+  lh+='<span class="litem litem-info"><span class="ldot" style="background:#60A5FA"></span>\u7121\u969c\u7919\u5e2d+\u966a\u4f34</span>';
   leg.innerHTML=lh;cw.appendChild(leg);
   c.addEventListener('mousedown',mDown);c.addEventListener('mousemove',mMove);c.addEventListener('mouseup',mUp);
   c.addEventListener('mouseleave',function(){document.getElementById('tooltip').style.display='none';document.getElementById('selCount').style.display='none';});
@@ -1028,18 +1022,22 @@ function updStats(){
     else if(a.cat==='employee')employee++;
   }
   var assigned=internal+external+sponsor+game+employee;
-  document.getElementById('s1').textContent=(tot-assigned).toLocaleString();
+  (function(){var _s1=document.getElementById('s1');if(_s1)_s1.textContent=(tot-assigned).toLocaleString();})();
   document.getElementById('s-game').textContent=game.toLocaleString();
   document.getElementById('s-sponsor').textContent=sponsor.toLocaleString();
   document.getElementById('s-external').textContent=external.toLocaleString();
   document.getElementById('s-internal').textContent=internal.toLocaleString();
   document.getElementById('s-employee').textContent=employee.toLocaleString();
-  document.getElementById('s5').textContent=tot.toLocaleString();
-  var obEl=document.getElementById('s-obstruct');if(obEl)obEl.textContent=OBSTRUCT_COUNT.toLocaleString();
-  var veEl=document.getElementById('s-venue');if(veEl)veEl.textContent=VENUE_COUNT.toLocaleString();
+  (function(){var _s5=document.getElementById('s5');if(_s5)_s5.textContent=tot.toLocaleString();})();
+  /* dynamic special zone counts */
+  var _obCnt=0,_veCnt=0,_wc2Cnt=0;
+  for(var _sk2 in SECTIONS){var _ss2=SECTIONS[_sk2].seats||[];for(var _si2=0;_si2<_ss2.length;_si2++){var _sz2=_ss2[_si2].z;if(_sz2==='視線不良')_obCnt++;else if(_sz2==='場館保留席')_veCnt++;else if(_sz2==='無障礙席'||_sz2==='陪伴席')_wc2Cnt++;}}
+  OBSTRUCT_COUNT=_obCnt;VENUE_COUNT=_veCnt;
+  var obEl=document.getElementById('s-obstruct');if(obEl)obEl.textContent=_obCnt.toLocaleString();
+  var veEl=document.getElementById('s-venue');if(veEl)veEl.textContent=_veCnt.toLocaleString();
   var disRow=document.getElementById('s-disability-row');var disEl=document.getElementById('s-disability');
-  if(disRow)disRow.style.display=DISABILITY_COUNT>0?'':'none';
-  if(disEl)disEl.textContent=DISABILITY_COUNT.toLocaleString();
+  if(disRow)disRow.style.display='';
+  if(disEl)disEl.textContent=_wc2Cnt.toLocaleString();
   var kwEl=document.getElementById('s-kw'),wcEl=document.getElementById('s-wc');
   var kwCount=0,wcCount=0;
   for(var _sk in SECTIONS){
