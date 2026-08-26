@@ -216,8 +216,6 @@ canvas{display:block;cursor:crosshair}
         <span class="dot"></span>員工自選票<span class="cat-cnt" id="cc-employee"></span><span class="ar">&#9660;</span>
         <div class="smdrop" id="m-employee"><div class="smadd">&#65291; &#26032;&#22686;&#23376;&#38917;&#30446;</div></div>
       </div>
-      <div class="divr"></div>
-      <button class="clrbtn" id="btnClr">&#28165;&#38500;&#36984;&#21462;</button>
     </div>
     <div id="cw">
       <div id="nosec">
@@ -947,7 +945,7 @@ function setCat(cat,subId,label,color){
   document.querySelectorAll('.cb').forEach(function(b){b.classList.remove('on');});
   var el=document.getElementById('cb-'+cat);if(el)el.classList.add('on');
 }
-document.getElementById('btnClr').addEventListener('click',function(){actCat=null;document.querySelectorAll('.cb').forEach(function(b){b.classList.remove('on');});});
+
 /* \u2500\u2500 dropdown click-lock \u2500\u2500 */
 (function(){
   document.querySelectorAll('.cb').forEach(function(cb){
