@@ -1049,7 +1049,7 @@ function renderSec(sec){
   var allSeats=d.seats.concat(d.work.map(function(w){return{r:w.r,s:w.s,z:'work'};}));
   if(d.accessible)for(var ai=0;ai<d.accessible.length;ai++)allSeats.push(d.accessible[ai]);
   if(d.companion)for(var ci=0;ci<d.companion.length;ci++)allSeats.push(d.companion[ci]);
-  var isMirrorSec=['A5','A6','A7','A8','B4','B5','B6'].indexOf(sec)>=0;
+  var isMirrorSec=false;
   for(var i=0;i<allSeats.length;i++){
     var st=allSeats[i];
     var sx=isMirrorSec?RLW+(maxS-st.s)*PITCH:RLW+(st.s-minS)*PITCH;
@@ -1104,7 +1104,7 @@ function drawCvs(sec,minR,maxR,minS,maxS){
   ctx2.fillStyle='#94A3B8';ctx2.textAlign='right';ctx2.textBaseline='middle';
   for(var r=minR;r<=maxR;r++)ctx2.fillText(r+'\u6392',RLW-4,CLH+(r-minR)*PITCH+CELL/2);
   ctx2.textAlign='center';ctx2.textBaseline='bottom';
-  var isMirrorDraw=['A5','A6','A7','A8','B4','B5','B6'].indexOf(sec)>=0;
+  var isMirrorDraw=false;
   for(var s=minS;s<=maxS;s+=5){var lx=isMirrorDraw?RLW+(maxS-s)*PITCH+CELL/2:RLW+(s-minS)*PITCH+CELL/2;ctx2.fillText(s,lx,CLH-2);}
   var wk=wkSets[sec]||new Set();
   for(var k in sPos){
