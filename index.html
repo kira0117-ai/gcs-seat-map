@@ -1049,7 +1049,7 @@ function renderSec(sec){
   var allSeats=d.seats.concat(d.work.map(function(w){return{r:w.r,s:w.s,z:'work'};}));
   if(d.accessible)for(var ai=0;ai<d.accessible.length;ai++)allSeats.push(d.accessible[ai]);
   if(d.companion)for(var ci=0;ci<d.companion.length;ci++)allSeats.push(d.companion[ci]);
-  var isMirrorSec=true;
+  var isMirrorSec=['A5','A6','A7','A8','B4','B5','B6'].indexOf(sec)>=0;
   for(var i=0;i<allSeats.length;i++){
     var st=allSeats[i];
     var sx=isMirrorSec?RLW+(maxS-st.s)*PITCH:RLW+(st.s-minS)*PITCH;
