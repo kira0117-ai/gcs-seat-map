@@ -188,6 +188,8 @@ canvas{display:block;cursor:crosshair}
     <div id="sl"></div>
     <div id="stpan">
       <h4>全場統計</h4>
+      <div class="strow strow-sum"><span>總張數</span><span class="sv" id="s-grand-total">-</span></div>
+      <div class="strow strow-sum"><span>可售張數</span><span class="sv" id="s-avail">-</span></div>
                   <div class="sthr"></div>
       <div class="strow"><span>內部公關票</span><span class="sv" id="s-internal" style="color:#3B82F6">-</span></div>
       <div class="strow"><span>外部公關票</span><span class="sv" id="s-external" style="color:#8B5CF6">-</span></div>
@@ -1402,6 +1404,8 @@ function updStats(){
   OBSTRUCT_COUNT=_obCnt;VENUE_COUNT=_veCnt;
   var obEl=document.getElementById('s-obstruct');if(obEl)obEl.textContent=_obCnt.toLocaleString();
   var veEl=document.getElementById('s-venue');if(veEl)veEl.textContent=_veCnt.toLocaleString();
+  var gtEl=document.getElementById('s-grand-total');if(gtEl)gtEl.textContent=(tot+OBSTRUCT_COUNT+VENUE_COUNT).toLocaleString();
+  var avEl=document.getElementById('s-avail');if(avEl)avEl.textContent=(tot-assigned).toLocaleString();
   var disRow=document.getElementById('s-disability-row');var disEl=document.getElementById('s-disability');
   if(disRow)disRow.style.display='';
   if(disEl)disEl.textContent=_wc2Cnt.toLocaleString();
