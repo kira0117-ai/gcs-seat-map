@@ -505,15 +505,10 @@ var EMP_ALLOWED_FLOORS=['B1看台','L2看台','L4看台','L5看台'];
 function empAssignBlockReason(sec){
   if(!actCat||actCat.cat!=='employee')return null;
   if(!window.fbAdmin.isAdmin()&&!actCat.subId)return '請先填寫員編才能劃位（點選「員工自選票」輸入員編）';
-  if(isConcert(curEvent)){
-    if(/^[AB]\d$/.test(sec))return null;/* 特A/B:允許但前幾排由座位層攔截 */
-    var base=CONCERT_SECTIONS&&CONCERT_SECTIONS[sec]?CONCERT_SECTIONS[sec].zone:'';
-    if(EMP_ALLOWED_FLOORS.indexOf(base)<0)return '員工自選票僅限 B1、L2、L4、L5 區域劃位，此區不開放';
-  }
   return null;
 }
 var EMP_MAX_SEATS=2;
-var CONCERT_EMP_A_BLOCK_ROWS=5;/* 演唱會特A/B 第一批員工購:前5排不開放 */
+var EMP_A_BLOCK_ROWS=5;/* 演唱會&賽事 A區前5排留給公售不開放 */
 var AUTOSNAP_ERASE_MIN=3;
 function empSeatCount(label){var n=0;for(var k in asgn){var a=asgn[k];if(a&&a.cat==='employee'&&a.label===label)n++;}return n;}
 function empIdFromLabel(label){if(!label)return '';var i=label.indexOf('-');return i>=0?label.slice(i+1):label;}
@@ -1168,7 +1163,7 @@ function mUp(e){
     };
     if(isDrag&&dStart&&dEnd){
       var _ex1=Math.min(dStart.x,dEnd.x),_ey1=Math.min(dStart.y,dEnd.y),_ex2=Math.max(dStart.x,dEnd.x),_ey2=Math.max(dStart.y,dEnd.y);
-      for(var _ek in sPos){if(wk.has(_ek))continue;var _epo=sPos[_ek];if(ZONE_CFG[_epo.z]&&ZONE_CFG[_epo.z].noSelect)continue;if(!_eAdm&&isConcert(curEvent)&&/^[AB]\d$/.test(curSec)&&_epo.r<=CONCERT_EMP_A_BLOCK_ROWS)continue;if(_epo.x>=_ex1-PITCH&&_epo.x<=_ex2&&_epo.y>=_ey1-PITCH&&_epo.y<=_ey2)_eTally(curSec+'-'+_epo.r+'-'+_epo.s);}
+      for(var _ek in sPos){if(wk.has(_ek))continue;var _epo=sPos[_ek];if(ZONE_CFG[_epo.z]&&ZONE_CFG[_epo.z].noSelect)continue;if(!_eAdm&&/^A\d$/.test(curSec)&&_epo.r<=EMP_A_BLOCK_ROWS)continue;if(_epo.x>=_ex1-PITCH&&_epo.x<=_ex2&&_epo.y>=_ey1-PITCH&&_epo.y<=_ey2)_eTally(curSec+'-'+_epo.r+'-'+_epo.s);}
     }else if(dStart){
       var _eh=getSeat(p.x,p.y);if(_eh&&!wk.has(_eh.k)&&!(ZONE_CFG[_eh.p.z]&&ZONE_CFG[_eh.p.z].noSelect))_eTally(curSec+'-'+_eh.p.r+'-'+_eh.p.s);
     }
@@ -1181,10 +1176,11 @@ function mUp(e){
   if(isDrag&&dStart&&dEnd){
     var x1=Math.min(dStart.x,dEnd.x),y1=Math.min(dStart.y,dEnd.y);
     var x2=Math.max(dStart.x,dEnd.x),y2=Math.max(dStart.y,dEnd.y);
+    var _empRowBlocked=false;
     for(var k in sPos){
       if(wk.has(k))continue;var pos=sPos[k];
       if(ZONE_CFG[pos.z]&&ZONE_CFG[pos.z].noSelect)continue;
-      if(actCat.cat==='employee'&&!window.fbAdmin.isAdmin()&&isConcert(curEvent)&&/^[AB]\d$/.test(curSec)&&pos.r<=CONCERT_EMP_A_BLOCK_ROWS)continue;
+      if(actCat.cat==='employee'&&!window.fbAdmin.isAdmin()&&/^A\d$/.test(curSec)&&pos.r<=EMP_A_BLOCK_ROWS){_empRowBlocked=true;continue;}
       var ak=curSec+'-'+pos.r+'-'+pos.s;
       if(pos.x>=x1-PITCH&&pos.x<=x2&&pos.y>=y1-PITCH&&pos.y<=y2){
         var key2=curSec+'-'+pos.r+'-'+pos.s,acted=false;
@@ -1201,12 +1197,13 @@ function mUp(e){
         if(acted)changed++;
       }
     }
+    if(_empRowBlocked)addLog('\u524d'+EMP_A_BLOCK_ROWS+'\u6392\u7559\u7d66\u516c\u552e\uff0c\u4e0d\u958b\u653e',true);
     if(changed>0){addLog(isZone?'\u6e05\u9664 '+secLbl(curSec)+' '+changed+'\u5e2d':'\u6846\u9078 '+secLbl(curSec)+' '+changed+'\u5e2d'+' > '+actCat.label);if(chs.length)queueSave(chs);}
-    else undoStack.pop();
+    else if(!_empRowBlocked)undoStack.pop();
   }else if(dStart){
     var hit=getSeat(p.x,p.y);
     if(hit&&!wk.has(hit.k)&&!(ZONE_CFG[hit.p.z]&&ZONE_CFG[hit.p.z].noSelect)){
-      if(actCat.cat==='employee'&&!window.fbAdmin.isAdmin()&&isConcert(curEvent)&&/^[AB]\d$/.test(curSec)&&hit.p.r<=CONCERT_EMP_A_BLOCK_ROWS){addLog('特A/B 前'+CONCERT_EMP_A_BLOCK_ROWS+'排為第二批開放，目前不可選位',true);undoStack.pop();isDrag=false;dStart=null;dEnd=null;return;}
+      if(actCat.cat==='employee'&&!window.fbAdmin.isAdmin()&&/^A\d$/.test(curSec)&&hit.p.r<=EMP_A_BLOCK_ROWS){addLog('前'+EMP_A_BLOCK_ROWS+'排留給公售，不開放',true);undoStack.pop();isDrag=false;dStart=null;dEnd=null;return;}
       var ak=curSec+'-'+hit.p.r+'-'+hit.p.s,key2=curSec+'-'+hit.p.r+'-'+hit.p.s;
       if(isZone&&window.fbAdmin.isAdmin()){delete asgn[ak];chs.push({key:key2,action:'delete'});changed=1;}
       else if(!window.fbAdmin.isAdmin()){
