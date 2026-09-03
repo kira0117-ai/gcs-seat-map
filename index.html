@@ -321,6 +321,8 @@ canvas{display:block;cursor:crosshair}
         }
       });
       try{if(typeof applyDrafts!=='undefined')applyDrafts();}catch(e){}
+      /* merge employee sub-items from seat data so admin sees all registered employees */
+      try{var _eMap={};Object.keys(asgn).forEach(function(k){var v=asgn[k];if(v.cat==='employee'&&v.subId&&v.label){_eMap[v.subId]={id:v.subId,label:v.label,color:v.color||'#EC4899'};}});var _eIds=new Set((subs.employee||[]).map(function(s){return s.id;}));var _eNew=false;Object.values(_eMap).forEach(function(s){if(!_eIds.has(s.id)){subs.employee.push(s);_eIds.add(s.id);_eNew=true;}});if(_eNew&&typeof rebuildMenu!=='undefined')rebuildMenu('employee');}catch(e){}
       /* redraw current section */
       if(typeof curSec!=='undefined'&&curSec){
         try{var b=getBounds(curSec);drawCvs(curSec,b[0],b[1],b[2],b[3]);updZonePills(curSec);updSecStat(curSec);}catch(e){}
