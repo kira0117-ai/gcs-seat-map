@@ -507,7 +507,7 @@ function empAssignBlockReason(sec){
   if(!window.fbAdmin.isAdmin()&&!actCat.subId)return '請先填寫員編才能劃位（點選「員工自選票」輸入員編）';
   return null;
 }
-var EMP_MAX_SEATS=2;
+var EMP_MAX_SEATS=4;
 var EMP_A_BLOCK_ROWS=5;/* 演唱會&賽事 A區前5排留給公售不開放 */
 var AUTOSNAP_ERASE_MIN=3;
 function empSeatCount(label){var n=0;for(var k in asgn){var a=asgn[k];if(a&&a.cat==='employee'&&a.label===label)n++;}return n;}
@@ -1327,7 +1327,7 @@ document.getElementById('cb-employee').addEventListener('click',function(e){
   if(!window.fbAdmin.isAdmin()){
     mPar='employee';
     document.getElementById('mdlgTitle').textContent='\u8acb\u8f38\u5165\u54e1\u7de8';
-    document.getElementById('minput').placeholder='\u4f8b\uff1aTW1392';
+    document.getElementById('minput').placeholder='\u4f8b\uff1aMOTW1392\u91d1\u51ac\u5929';
     openModal();
     return;
   }
@@ -1373,7 +1373,7 @@ function rebuildMenu(par){
     menu.appendChild(item);
   }
   var add=document.createElement('div');add.className='smadd';add.textContent='\uff0b \u65b0\u589e\u5b50\u9805\u76ee';
-  add.addEventListener('click',(function(p){return function(e){e.stopPropagation();mPar=p;document.getElementById('mdlgTitle').textContent='\u65b0\u589e\u5b50\u9805\u76ee';var ph={employee:'\u7bc4\u4f8b\uff1aTW1392 XXX'};document.getElementById('minput').placeholder=ph[p]||'\u4f8b\uff1aACS\u3001\u5a92\u9ad4\u3001\u8d0a\u52a9\u5546';openModal();};})(par));
+  add.addEventListener('click',(function(p){return function(e){e.stopPropagation();mPar=p;document.getElementById('mdlgTitle').textContent='\u65b0\u589e\u5b50\u9805\u76ee';var ph={employee:'\u7bc4\u4f8b\uff1aMOTW1392\u91d1\u51ac\u5929'};document.getElementById('minput').placeholder=ph[p]||'\u4f8b\uff1aACS\u3001\u5a92\u9ad4\u3001\u8d0a\u52a9\u5546';openModal();};})(par));
   menu.appendChild(add);
 }
 
